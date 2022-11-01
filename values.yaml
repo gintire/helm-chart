@@ -1,0 +1,332 @@
+# Default values for cppm
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+global:
+  imageRegistry: "abis.ahnlab.com"
+  ## E.g.
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
+
+  resources:
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 200m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+  # nfs enabled or not
+  nfs:
+    enabled: true
+    natIp: localhost
+  ### Common values
+  ### @param volumeMount to be added to cppm-tomcat-console
+  volumeMounts:
+    - name: cpp
+      mountPath: /opt/ahnlab/cpp
+    - name: ems
+      mountPath: /opt/ahnlab/ems
+    - name: nosql
+      mountPath: /nosql
+    - name: database
+      mountPath: /database
+    - name: tmp
+      mountPath: /tmp
+    - name: home
+      mountPath: /home
+    - name: crond
+      mountPath: /etc/cron.d
+    - name: crondaily
+      mountPath: /etc/cron.daily
+    - name: logrotate
+      mountPath: /etc/logrotate.d
+    - name: rsyslog
+      mountPath: /etc/rsyslog.d
+    - name: log
+      mountPath: /var/log
+    - name: postgresql
+      mountPath: /var/run/postgresql
+    - name: repo
+      mountPath: /opt/repo
+    - name: install
+      mountPath: /opt/ahnlab/install
+    - name: update
+      mountPath: /opt/ahnlab/update
+    - name: permanent
+      mountPath: /permanent
+    - name: new
+      mountPath: /new
+
+  ### @param volumes to be added to cppm-tomcat-console
+  volumes:
+    - name : cpp
+      nfs:
+        path: /n008612_cppm02/opt/ahnlab/cpp
+    - name : ems
+      nfs:
+        path: /n008612_cppm02/opt/ahnlab/ems
+    - name : nosql
+      nfs:
+        path: /n008612_cppm02/nosql
+    - name : database
+      nfs:
+        path: /n008612_cppm02/database
+    - name : tmp
+      nfs:
+        path: /n008612_cppm02/tmp
+    - name : home
+      nfs:
+        path: /n008612_cppm02/home
+    - name : crond
+      nfs:
+        path: /n008612_cppm02/etc/cron.d
+    - name : crondaily
+      nfs:
+        path: /n008612_cppm02/etc/cron.daily
+    - name : logrotate
+      nfs:
+        path: /n008612_cppm02/etc/logrotate.d
+    - name : rsyslog
+      nfs:
+        path: /n008612_cppm02/etc/rsyslog.d
+    - name : log
+      nfs:
+        path: /n008612_cppm02/var/log
+    - name : postgresql
+      nfs:
+        path: /n008612_cppm02/var/run/postgresql
+    - name : repo
+      nfs:
+        path: /n008612_cppm02/external/repo
+    - name : install
+      nfs:
+        path: /n008612_cppm02/external/install
+    - name : update
+      nfs:
+        path: /n008612_cppm02/external/update
+    - name : permanent
+      nfs:
+        path: /n008612_cppm02/permanent
+    - name : new
+      nfs:
+        path: /n008612_cppm02/external/new
+
+  ### @paramlogSideCar create containers to log files by a sidecar pattern.
+  logSideCar:
+    enabled: true
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 200m
+        memory: 128Mi
+
+
+  # HA
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPU: 90
+    targetMemory: 90
+## @section Common parameters
+
+## @param nameOverride String to partially override nginx.fullname template (will maintain the release name)
+##
+nameOverride: ""
+## @param fullnameOverride String to fully override nginx.fullname template
+##
+fullnameOverride: ""
+## @param namespaceOverride String to fully override common.names.namespace
+##
+namespaceOverride: ""
+## @param kubeVersion Force target Kubernetes version (using Helm capabilities if not set)
+##
+kubeVersion: ""
+## @param clusterDomain Kubernetes Cluster Domain
+##
+clusterDomain: cluster.local
+## @param extraDeploy Extra objects to deploy (value evaluated as a template)
+##
+extraDeploy: []
+## @param commonLabels Add labels to all the deployed resources
+##
+commonLabels: {}
+## @param commonAnnotations Add annotations to all the deployed resources
+##
+commonAnnotations: {}
+
+####################################################################################
+### CPP-TOMCAT-CONSOLE
+####################################################################################
+console:
+  replicaCount: 1
+  image:
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "0.12"
+  annotations:
+    setTz: enabled
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 0.5
+      memory: 4G
+    requests:
+      cpu: 0.5
+      memory: 4G
+  ingress:
+    enabled: true
+  ## @param jvmOption Custom jvm option to be added to cppm-tomcat-console configuration
+  ## example jvm option:
+  ## jvmOption: |-
+  ##   -Xms512m -Xmx512m
+  ##
+  envFrom:
+    enabled: true
+  configMaps:
+  - configMapRef:
+      name: jvm-option
+    
+  jvmOption: |-
+    -Xms2048m -Xmx2048m -Dspring.profiles.active=k8s
+
+####################################################################################
+### CPP-TOMCAT-auth
+####################################################################################
+auth:
+  image:
+    tag: "0.2"
+
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 200m
+      memory: 1G
+    requests:
+      cpu: 100m
+      memory: 1G
+
+  ## @param jvmOption Custom jvm option to be added to cppm-tomcat-console configuration
+  ## example jvm option:
+  ## jvmOption: |-
+  ##   -Xms512m -Xmx512m
+  ##
+  jvmOption: |-
+    -Xms512m -Xmx512m -Dspring.profiles.active=k8s
+
+####################################################################################
+# CPP-TOMCAT-agent
+####################################################################################
+agent:
+  replicaCount: 1
+  image:
+    tag: "7.6-5"
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 0.5
+      memory: 4G
+    requests:
+      cpu: 0.5
+      memory: 4G
+  jvmOption: |-
+    -Xms2048m -Xmx4096m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/permanent/log/agent -Dspring.profiles.active=k8s
+
+####################################################################################
+# CPP-BATCH-PROCESSOR
+####################################################################################
+batch:
+  replicaCount: 1
+  image:
+    tag: "0.3"
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    limits:
+      cpu: 0.5
+      memory: 2G
+    requests:
+      cpu: 0.5
+      memory: 2G
+  jvmOption: |-
+    -Xmx2048m -Dapp.config.path=/opt/ahnlab/cpp/etc/config -Dapp.processor.id=batch
+
+####################################################################################
+# CPP-SCHEDULER
+####################################################################################
+scheduler:
+  replicaCount: 1
+  image:
+    tag: "0.4"
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    #limits:
+    #  cpu: 2
+    #  memory: 4G
+    #requests:
+    #  cpu: 1
+    #  memory: 2G
+  jvmOption: |-
+    -classpath ${JAVA_HOME}/lib:/app/libs/* -Xmx256m -Dapp.config.path=/opt/ahnlab/cpp/etc/config -Dapp.log.dir=/opt/ahnlab/cpp/log/scheduler -Dapp.processor.id=scheduler com.ahnlab.epp.service.scheduler.EppScheduleService
+
+####################################################################################
+# CPP-KAFKA-CONSUMER
+####################################################################################
+kafka-consumer:
+  replicaCount: 1
+  image:
+    tag: "0.2"
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    #limits:
+    #  cpu: 2
+    #  memory: 4G
+    #requests:
+    #  cpu: 1
+    #  memory: 2G
+  jvmOption: |-
+    -Dapp.config.path=/opt/ahnlab/cpp/etc/config -Dapp.processor.id=consumer -Dspring.profiles.active=k8s
+
+####################################################################################
+# CPP-REPORT-PROCESSOR
+####################################################################################
+report:
+  replicaCount: 1
+  image:
+    tag: "0.2"
+  resources:
+    # We usually recommend not to specify default resources and to leave this as a conscious
+    # choice for the user. This also increases chances charts run on environments with little
+    # resources, such as Minikube. If you do want to specify resources, uncomment the following
+    # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+    #limits:
+    #  cpu: 2
+    #  memory: 4G
+    #requests:
+    #  cpu: 1
+    #  memory: 2G
+  jvmOption: |-
+    -Dapp.config.path=/opt/ahnlab/cpp/etc/config -Dspring.profiles.active=k8s

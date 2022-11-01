@@ -1,0 +1,78 @@
+### CPP-TOMCAT-CONSOLE
+replicaCount: 1
+image:
+  repository: cppm/kafka-consumer
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "0.2"
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "cpp-kafka-consumer"
+
+fullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+resources:
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  #limits:
+  #  cpu: 2
+  #  memory: 4G
+  #requests:
+  #  cpu: 1
+  #  memory: 2G
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+## @param jvmOption Custom jvm option to be added to cppm-tomcat-console configuration
+## example jvm option:
+## jvmOption: |-
+##   -Xms512m -Xmx512m
+##
+envFrom:
+  enabled: true
+configMaps:
+- configMapRef:
+    name: jvm-option
+jvmOption: |-
+  -Dapp.config.path=/opt/ahnlab/cpp/etc/config -Dapp.processor.id=consumer -Dspring.profiles.active=k8s
+## @param existingjvmOptionConfigmap ConfigMap with custom jvm option to be added to cpp-tomcat-console configuration
+## NOTE: This will override jvmOption
+##
+existingjvmOptionConfigmap: ""
+
+### @paramlogSideCar create containers to log files by a sidecar pattern.
+logSideCar:
+  enabled: true
+
+# HA
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 20
+  targetCPU: 80
+  targetMemory: 80
