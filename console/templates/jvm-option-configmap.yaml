@@ -1,0 +1,10 @@
+{{- if and .Values.jvmOption (not .Values.existingJvmOptionConfigmap) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.fullname" . }}-jvm-option
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+data:
+  CATALINA_OPTS: {{ .Values.jvmOption }}
+{{- end }}

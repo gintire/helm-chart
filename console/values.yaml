@@ -1,0 +1,122 @@
+### CPP-TOMCAT-CONSOLE
+replicaCount: 1
+image:
+  repository: cppm/console
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "0.12"
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "cpp-tomcat-console"
+
+fullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8806
+  targetPort: 8080
+  clusterIP: None
+
+# Ingress
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+          more_set_headers "Access-Control-Allow-Origin: $http_origin";
+    nginx.ingress.kubernetes.io/cors-allow-origin: https://cppm2-test.ahnlab.com
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: PUT, GET, POST, 
+          OPTIONS, DELETE, PATCH
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/client-body-buffer-size: 1m
+    nginx.ingress.kubernetes.io/proxy-body-size: 8m
+    nginx.ingress.kubernetes.io/proxy-buffering: "on"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: "8k"
+    nginx.ingress.kubernetes.io/proxy-max-temp-file-size: "0"
+    nginx.ingress.kubernetes.io/connection-proxy-header: "keep-alive"
+    nginx.ingress.kubernetes.io/ssl-cipers: "ALL:!aNULL:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP"
+  hosts:
+    - host: cppm2-test.ahnlab.com
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: tomcat-console
+              port:
+                number: 8806
+  tls:
+    - hosts:
+        - cppm2-test.ahnlab.com
+      secretName: ahnlab-cert-secret
+
+resources:
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  limits:
+    cpu: 2
+    memory: 4G
+  requests:
+    cpu: 1
+    memory: 4G
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+## @param jvmOption Custom jvm option to be added to cppm-tomcat-console configuration
+## example jvm option:
+## jvmOption: |-
+##   -Xms512m -Xmx512m
+##
+envFrom:
+  enabled: true
+configMaps:
+- configMapRef:
+    name: jvm-option
+jvmOption: |-
+  -Xms2048m -Xmx2048m -Dspring.profiles.active=k8s
+## @param existingjvmOptionConfigmap ConfigMap with custom jvm option to be added to cpp-tomcat-console configuration
+## NOTE: This will override jvmOption
+##
+existingjvmOptionConfigmap: ""
+
+### @paramlogSideCar create containers to log files by a sidecar pattern.
+logSideCar:
+  enabled: true
+
+
+
+# HA
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPU: 80
+  targetMemory: 80

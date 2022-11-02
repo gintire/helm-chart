@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.fullname" . }}
+  labels:
+    {{- include "common.labels" . | nindent 4 }}
+  annotations:
+    {{- toYaml .Values.annotations | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "common.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "common.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "common.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "common.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8832
+              protocol: TCP
+#          livenessProbe:
+#            httpGet:
+#              path: /
+#              port: http
+#          readinessProbe:
+#            httpGet:
+#              path: /
+#              port: http
+          {{- if .Values.envFrom.enabled }}
+          envFrom:
+          {{- range .Values.configMaps}}
+          - configMapRef:
+              name: {{ include "common.fullname" $ }}{{ include "common.configs.config" (dict "configRoot" .configMapRef "context" $)}}
+          {{- end }}
+          {{- end }}
+          resources: {{- include "common.resources" . | nindent 12 }}
+          {{- with .Values.global.volumeMounts }}
+          volumeMounts:
+          - name: {{ include "common.fullname" $ }}-applog
+            mountPath: /permanent/log/scheduler
+            {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- if .Values.logSideCar.enabled }}
+        - name: log-side-car
+          image: busybox:1.28
+          args: [/bin/sh, -c, 'tail -n+1 -F /var/log/{{ .Chart.Name }}.log']
+          volumeMounts:
+          - name: {{ include "common.fullname" . }}-applog
+            mountPath: /var/log
+          resources: {{- include "logSideCar.resources" . | nindent 12 }}
+        {{- end }}
+      volumes:
+      - name: {{ include "common.fullname" . }}-applog
+        emptyDir: {}
+      {{- if .Values.global.nfs.enabled }}
+      {{- range .Values.global.volumes }}
+      - name: {{ .name | quote }}
+        nfs:
+          path: {{ .nfs.path | quote }}
+          server: {{ $.Values.global.nfs.natIp }}
+      {{- end }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
