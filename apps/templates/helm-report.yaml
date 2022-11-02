@@ -19,6 +19,6 @@ spec:
       - values/global-values.yaml
       - values.yaml
       values: |-
-      global:
-        nfs:
-          natIp: 169.254.170.73
+        global:
+          nfs:
+            natIp: 169.254.170.73
