@@ -1,6 +1,7 @@
 spec:
   destination:
     server: https://kubernetes.default.svc
+    namespace: default
   source:
     repoURL: https://github.com/gintire/helm-chart
     targetRevision: HEAD
